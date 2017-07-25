@@ -7,32 +7,38 @@
    Download and install Arduino IDE https://www.arduino.cc/en/Main/Software
    The program needs to be running and executing in Arduino IDE.
    
-   Program:
-   This program is Fingerprint technique using light intensity picked up
-   by photoresistor and measured in resistance values (Ohms).
+   Program fingerprint.ino:
+   This program is Fingerprint technique using light intensity picked up by
+   photoresistor, measured in resistance values (Ohms), and converted into a
+   distance measurements using various Regression models.
    It consists of 2 phases:
-   1) Off-line Calibration (training) phase:
-        During this phase fingerprint table is constructed using measurement
-        samples and stored in database. Each measurement of resistor is stored
-        with associated distance value (meters) in the table. By default the
-        distance is sampled every 0.1 m from photoresistor. 
-        Based on the measurements stored in database the Statistical analysis 
-        is performed to construct the curve-fitting or best-fitting Regression
-        models.
-        Algorithm builds 3 (three) regression models:
-        a) Linear Regression model:
-           y = a + bx
-        b) Polynomial (Quadratic) Regression model:
-           y = a + bx + cx^2
-        c) Exponential regression model:
-           y = a e^(bx)
-        In addition calculates R^2 (R-Squared) value for each of the regression
-        model and based on this R^2 value identifies among three the best
-        curve-fitting model that is used for online position phase.
-   2) On-line Positioning phase
-        During this phase resistance measurements picked up by photoresistor are
-        sent to the best-fitting regression model algorithm to compute the
-        distance and displays it to the serial monitor.
+       1) Off-line Calibration (training) phase:
+           During this phase fingerprint table is constructed using measurement
+           samples and stored in database. Each resistance value is stored
+           with associated distance value (meters) in the table during
+           training. Training is performed by placing LED light at certain
+           distances from photoresistor. By default, the distance is sampled
+           every 0.1 meters from photoresistor.
+           Based on the measurements stored in database the Statistical
+           analysis is performed to construct the curve-fitting Regression
+           models.
+           Algorithm builds 3 (three) regression models:
+               a) Linear Regression model:
+                  y = a + bx
+               b) Polynomial (Quadratic) Regression model:
+                  y = a + bx + cx^2
+               c) Exponential Regression model:
+                  y = a e^(bx)
+           In addition, calculates R^2 (R-Squared) value for each of the
+           regression model. Since R-Squared value cannot be used for
+           statistical evaluation of NON-Linear regression models, all three
+           models are used to determine the distance during On-line
+           Positioning phase.
+       2) On-line Positioning phase:
+           During this phase resistance (x) measurements picked up by
+           photoresistor are used for distance (y) calculations utilizing each
+           regression model. Distance values are displayed on the serial
+           monitor.
 */
 
 #include<math.h>
@@ -64,15 +70,14 @@ double *linear_values;
 double *polynomial_valaues;
 double *exponential_valaues;
 bool offlinePhase;
-char regressionModel;
 double resistance, distance, sum_x, sum_x_2, sum_y, sum_log_y, sum_xy, sum_log_xy, sum_x_3, sum_x_4, sum_x_2_y;
 
 void setup(){
  pinMode(9, OUTPUT);
  Serial.begin(9600);
  linear_values = (double*) calloc(4, sizeof(double));
- polynomial_valaues = (double*) calloc(8, sizeof(double));
- exponential_valaues = (double*) calloc(8, sizeof(double));
+ polynomial_valaues = (double*) calloc(4, sizeof(double));
+ exponential_valaues = (double*) calloc(4, sizeof(double));
  offlinePhase = true;
  sum_x = 0;
  sum_x_2 = 0;
@@ -83,7 +88,6 @@ void setup(){
  sum_x_3 = 0;
  sum_x_4 = 0;
  sum_x_2_y =0;
- regressionModel = 'N';
 // pinMode(ledPin, OUTPUT); // Set lepPin - 9 pin as an output
  pinMode(pResistor, INPUT); // Set pResistor - A0 pin as an input (optional)
 }
@@ -96,28 +100,25 @@ void loop(){
     getLinearRegression();
     getPolynomialRegression();
     getExponentialRegression();
-    getBestRSquaredValue();
+    // getBestRSquaredValue(); // Cannot use R-Squared value for non-linear regression models
     delay(10000); //Delay
     Serial.println("On-Line Positioning starting ...");
+    delay(3000); //Delay
+    Serial.println("Distance measurements (meters) based on different Regression models");
+    Serial.println("Linear:     Polynomial:     Exponential:");
     delay(3000); //Delay
   }
   else{
     resistance = analogRead(pResistor);
-    switch(regressionModel) {
-      case 'L':
-        distance = linear_values[a] + linear_values[b] * resistance;
-        break;
-      case 'P':
-        distance = polynomial_valaues[a] + polynomial_valaues[b] * resistance + polynomial_valaues[c] * pow(resistance, 2);
-        break;
-      case 'E':
-        distance = exponential_valaues[a] * exp(exponential_valaues[b] * resistance);
-        break;
-     default:
-        distance = -1;
-    }
-    Serial.print(distance); //Write the distance to the serial monitor
-    Serial.println("  meters");
+    distance = linear_values[a] + linear_values[b] * resistance;
+    Serial.print(distance);
+    Serial.print("        ");
+    distance = polynomial_valaues[a] + polynomial_valaues[b] * resistance + polynomial_valaues[c] * pow(resistance, 2);
+    Serial.print(distance);
+    Serial.print("            ");
+    distance = exponential_valaues[a] * exp(exponential_valaues[b] * resistance);
+    Serial.print(distance);
+    Serial.println("     meters");
     delay(10000); //Delay
   }
 }
@@ -287,6 +288,11 @@ void getRSquaredValue(double* array_values, char regression){
   return;
 }
 
+/*
+ * Cannot use R^2 (R-squared) value for statistical evaluation of for NON-Linear regression models.
+ * Would not call this function any longer.
+ */
+/*
 void getBestRSquaredValue(){
   if(linear_values[r_2] >= polynomial_valaues[r_2] && linear_values[r_2] >= exponential_valaues[r_2]){
     Serial.println("The Best Regression model is Linear");
@@ -302,3 +308,4 @@ void getBestRSquaredValue(){
   }
   return;
 }
+*/
