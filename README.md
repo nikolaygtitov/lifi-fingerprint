@@ -8,17 +8,11 @@ HW requirements:
 Circuit setup:
 
     ----------------------------------------------------
-
-           PhotoR     10K
-
- +5    o---/|/|/--.--/|/|/---o GND
-
-                  |
-
- PinA0 o-----------
-
- Pin9  o-----buzzer---o GND
-
+                     PhotoR     10K
+          +5    o---/|/|/--.--/|/|/---o GND
+                           |
+          PinA0 o-----------
+          Pin9  o-----buzzer---o GND
     ----------------------------------------------------
 
 SW requirements:
